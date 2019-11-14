@@ -137,7 +137,17 @@ data("peerj32")
 #peerj32 <- peerj32$phyloseq
 
 # UI
-ui <- dashboardPage(
+
+#' Title
+#'
+#' @param ui
+#'
+#' @return
+#' @export
+#'
+#' @examples
+ui <- function(ui){
+  dashboardPage(
   dashboardHeader(title = "Biome-shiny v0.8"),
   dashboardSidebar(
     sidebarMenu(
@@ -719,6 +729,7 @@ ui <- dashboardPage(
                )
              )
           )
+      )
     )
   )
-)
+}

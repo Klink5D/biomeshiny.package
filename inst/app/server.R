@@ -139,6 +139,16 @@ data("peerj32")
 #peerj32 <- peerj32$phyloseq
 
 # Server
+#' Title
+#'
+#' @param input
+#' @param output
+#' @param session
+#'
+#' @return
+#' @export
+#'
+#' @examples
 server <- function(input, output, session) {
   datasetChoice <- reactive({
     if (input$datasetChoice == "Use sample dataset") {
