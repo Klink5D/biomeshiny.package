@@ -10,5 +10,7 @@ Depends: R (>= 3.5.1)
 License: GPLv3
 Encoding: UTF-8
 LazyData: true
-Imports: shiny, shinydashboard, shinyBS, rmarkdown, DT, ggplot2, plotly, knitr, dplyr, ggpubr, hrbrthemes, reshape2, vegan, ggplotify, RColorBrewer, BiocManager, biomformat, phyloseq, microbiome
+Remotes: joey711/phyloseq, microbiome/microbiome
+Imports: shiny, shinydashboard, shinyBS, rmarkdown, DT, ggplot2, plotly, knitr, dplyr, ggpubr, hrbrthemes, reshape2, vegan, ggplotify, RColorBrewer, BiocManager
+
     
