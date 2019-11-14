@@ -852,6 +852,5 @@ server <- function(input, output, session) {
 #'
 #' @examples
 launchApp <- function(){
-  #shinyApp(ui = ui, server = server)
-  shiny::runApp(appDir = getwd(), port = options(shiny.port=3808), launch.browser = TRUE)
+  shiny::shinyApp(biomeshiny.package::ui, biomeshiny.package::server)
 }
