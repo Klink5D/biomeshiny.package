@@ -5,5 +5,9 @@
 #'
 #' @examples
 launchApp <- function(){
-  shiny::shinyApp(biomeshiny.package::ui, biomeshiny.package::server)
+  appDir <- system.file("app", package = "biomeshiny.package")
+  if (appDir == "") {
+    stop("Could not find app Try re-installing `biomeshiny.package`.", call. = FALSE)
+  }
+  shiny::runApp(appDir, display.mode = "normal")
 }
