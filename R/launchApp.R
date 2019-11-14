@@ -9,5 +9,5 @@ launchApp <- function(){
   if (appDir == "") {
     stop("Could not find app Try re-installing `biomeshiny.package`.", call. = FALSE)
   }
-  shiny::runApp(appDir, display.mode = "normal")
+  shiny::runApp(appDir, display.mode = "normal", options = list(port = 42427, launch.browser = FALSE))
 }
