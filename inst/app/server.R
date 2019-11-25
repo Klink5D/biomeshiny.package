@@ -9,6 +9,8 @@ library(rmarkdown)
 library(DT)
 library(ggplot2)
 library(plotly)
+library(heatmaply)
+#library(ComplexHeatmap)
 library(knitr)
 library(dplyr)
 library(ggpubr)
@@ -30,31 +32,31 @@ plot_ordered_bar<-function (physeq, x = "Sample",
   require(plyr)
   require(grid)
   bb <- psmelt(physeq)
-
-
+  
+  
   samp_names <- aggregate(bb$Abundance, by=list(bb$Sample), FUN=sum)[,1]
   .e <- environment()
   bb[,fill]<- factor(bb[,fill], rev(sort(unique(bb[,fill])))) #fill to genus
-
-
+  
+  
   bb<- bb[order(bb[,fill]),] # genus to fill
   p = ggplot(bb, aes_string(x = x, y = y,
                             fill = fill),
              environment = .e, ordered = FALSE)
-
-
+  
+  
   p = p +geom_bar(stat = "identity",
                   position = "stack",
                   color = "black")
-
+  
   p = p + theme(axis.text.x = element_text(angle = -90, hjust = 0))
-
+  
   p = p + guides(fill = guide_legend(override.aes = list(colour = NULL), reverse=TRUE)) +
     theme(legend.key = element_rect(colour = "black"))
-
+  
   p = p + theme(legend.key.size = unit(leg_size, "cm"))
-
-
+  
+  
   if (!is.null(title)) {
     p <- p + ggtitle(title)
   }
@@ -105,30 +107,30 @@ make_chunk_from_function_body <- function(fun, chunk.name="", chunk.options=list
 report.source <- reactive({
   req(sessionData$import.params(),
       sessionData$filter.params())
-
+  
   report <- readLines("sc_report_base.Rmd")
-
+  
   insert.function <- function(report, tag, fun, chunk.name = "", chunk.options = list()) {
     w <- which(report == tag)
     report[w] <- make_chunk_from_function_body(fun, chunk.name = chunk.name, chunk.options = chunk.options)
-
+    
     return(report)
   }
-
+  
   # Import
   report <- insert.function(report, "<!-- import.fun -->", sessionData$import.fun(), chunk.name = "import")
-
+  
   # Filter
   report <- insert.function(report, "<!-- filter.fun -->", sessionData$filter.fun(), chunk.name = "filter")
-
-
+  
+  
   return(report)
 })
 
 #Function to collect all tables and images
 
 collect_content <- function(){
-    orca(communityPlotParams(), file = "community_plot.png")
+  orca(communityPlotParams(), file = "community_plot.png")
 }
 
 
@@ -136,19 +138,9 @@ collect_content <- function(){
 data("dietswap")
 data("atlas1006")
 data("peerj32")
-#peerj32 <- peerj32$phyloseq
+peerj32 <- peerj32$phyloseq
 
 # Server
-#' Title
-#'
-#' @param input
-#' @param output
-#' @param session
-#'
-#' @return
-#' @export
-#'
-#' @examples
 server <- function(input, output, session) {
   datasetChoice <- reactive({
     if (input$datasetChoice == "Use sample dataset") {
@@ -160,14 +152,14 @@ server <- function(input, output, session) {
       )
     } else {
       if(input$datasetType == ".biom file including sample variables") { #Simple .biom upload with sample_data() already set
-          req(input$dataset)
-          tryCatch({
-            datapath <- input$dataset$datapath
-            biomfile <- import_biom(datapath)
-            return(biomfile)
-          }, error = function(e){
-            simpleError("Error importing the .biom file.")
-          })
+        req(input$dataset)
+        tryCatch({
+          datapath <- input$dataset$datapath
+          biomfile <- import_biom(datapath)
+          return(biomfile)
+        }, error = function(e){
+          simpleError("Error importing the .biom file.")
+        })
       }
       if(input$datasetType == ".biom file with .csv metadata file"){ #Loads a .csv along with the .biom
         req(input$dataset2)
@@ -178,14 +170,14 @@ server <- function(input, output, session) {
         }, error = function(e){
           simpleError("Error importing the .biom file.")
         })
-
+        
         tryCatch({
           datapathMetadata <- input$datasetMetadata$datapath
           b <- sample_data(as.data.frame(read.csv(datapathMetadata, skipNul = TRUE)))
         }, error = function(e){
           simpleError("Error importing the .csv metadata file.")
         })
-
+        
         tryCatch({
           biomfile <- merge_phyloseq(a,b)
           return(biomfile)
@@ -193,40 +185,40 @@ server <- function(input, output, session) {
           simpleError("Error in merging .biom file with .csv metadata file.")
         })
       }
-
+      
       if(input$datasetType == ".biom file without .csv metadata file"){ #Loads a .biom file and generates sample metadata
-          req(input$dataset3)
-          tryCatch({
-            datapath <- input$dataset3$datapath
-            a <- import_biom(datapath)
-          }, error = function(e){
-            simpleError("Error importing .biom file")
-          })
-          tryCatch({
-            if(input$samplesAreColumns == TRUE){
-              samples.out <- colnames(otu_table(a))
-            }
-            if(input$samplesAreColumns == FALSE){
-              samples.out <- rownames(otu_table(a))
-            }
-            subject <- sapply(strsplit(samples.out, "D"), `[`, 1)
-            samdf <- data.frame(Subject=subject)
-            rownames(samdf) <- samples.out
-            b <- sample_data(samdf)
-          }, error = function(e){
-            simpleError("Error generating sample variables")
-          })
-          tryCatch({
-            biomfile <- merge_phyloseq(a, b)
-            return(biomfile)
-          }, error = function(e){
-            simpleError("Error merging sample variables with .biom file")
-          })
-        }
+        req(input$dataset3)
+        tryCatch({
+          datapath <- input$dataset3$datapath
+          a <- import_biom(datapath)
+        }, error = function(e){
+          simpleError("Error importing .biom file")
+        })
+        tryCatch({
+          if(input$samplesAreColumns == TRUE){
+            samples.out <- colnames(otu_table(a))
+          }
+          if(input$samplesAreColumns == FALSE){
+            samples.out <- rownames(otu_table(a))
+          }
+          subject <- sapply(strsplit(samples.out, "D"), `[`, 1)
+          samdf <- data.frame(Subject=subject)
+          rownames(samdf) <- samples.out
+          b <- sample_data(samdf)
+        }, error = function(e){
+          simpleError("Error generating sample variables")
+        })
+        tryCatch({
+          biomfile <- merge_phyloseq(a, b)
+          return(biomfile)
+        }, error = function(e){
+          simpleError("Error merging sample variables with .biom file")
+        })
       }
     }
+  }
   )
-
+  
   # New DatasetInput function works as an intermediary that checks if the dataset has been altered
   datasetInput <- reactive({
     if(input$coreFilterDataset == TRUE ){ # Filters the dataset
@@ -237,20 +229,19 @@ server <- function(input, output, session) {
     }
     return(dataset)
   })
-
-
+  
   ## Dataset Filtering ##
-
+  
   ## Populate SelectInput with taxonomic ranks ##
   observeEvent(input$datasetUpdate, {
     tryCatch({
       updateSelectInput(session, "subsetTaxaByRank",
-                               choices = colnames(tax_table(datasetInput())))
+                        choices = colnames(tax_table(datasetInput())))
     }, error = function(e) {
       simpleError(e)
     })
   }, ignoreNULL = FALSE)
-
+  
   ## Update Checkbox Group based on the chosen taxonomic rank ##
   observeEvent(input$subsetTaxaByRank, {
     tryCatch({
@@ -258,12 +249,12 @@ server <- function(input, output, session) {
                                choices = levels(data.frame(tax_table(datasetInput()))[[input$subsetTaxaByRank]]),
                                selected = levels(data.frame(tax_table(datasetInput()))[[input$subsetTaxaByRank]]),
                                inline = TRUE
-              )
+      )
     }, error = function(e) {
       simpleError(e)
     })
   })
-
+  
   ## Update subsetSamples Checkbox Group ##
   observeEvent(input$datasetUpdate, {
     tryCatch({
@@ -271,12 +262,12 @@ server <- function(input, output, session) {
                                choices = colnames(otu_table(datasetChoice())),
                                selected = colnames(otu_table(datasetChoice())),
                                inline = TRUE
-                )
-      }, error = function(e) {
-        simpleError(e)
-      })
+      )
+    }, error = function(e) {
+      simpleError(e)
+    })
   })
-
+  
   ## Table generation functions ##
   prevalenceAbsolute <- reactive({
     a <- as.data.frame(prevalence(compositionalInput(), detection = input$detectionPrevalence2/100, sort = TRUE, count = TRUE))
@@ -288,7 +279,7 @@ server <- function(input, output, session) {
     names(a) <- c("Prevalence (relative)")
     return(a)
   })
-
+  
   ## Function to apply filters to the dataset ##
   filterData <- reactive({
     physeq <- datasetChoice()
@@ -308,7 +299,7 @@ server <- function(input, output, session) {
     }
     # Filter top X taxa
     if (input$pruneTaxaCheck == TRUE){
-      filterTaxa <- names(sort(taxa_sums(a), decreasing = TRUE)[1:input$pruneTaxa])
+      filterTaxa <- names(sort(taxa_sums(physeq), decreasing = TRUE)[1:input$pruneTaxa])
       physeq <- prune_taxa(filterTaxa, physeq)
     }
     if (input$subsetSamplesCheck == TRUE){
@@ -320,18 +311,18 @@ server <- function(input, output, session) {
     physeq <- core(physeq, detection = 0, prevalence = input$prevalencePrevalence )
     return(physeq)
   })
-
+  
   output$corePhyloSummary <- renderPrint({ # Summary of corePhylo file
     summarize_phyloseq(filterData)
   })
   output$coreTaxa <- renderPrint({ # Reports the taxa in corePhylo
     taxa(filterData)
   })
-
+  
   output$prevalenceAbsoluteOutput <- renderDT({
     datatable(prevalenceAbsolute())
   })
-
+  
   output$downloadPrevalenceAbsolute <- downloadHandler(
     filename = function() {
       paste("PrevalenceAbsolute", ".csv", sep = "")
@@ -340,11 +331,11 @@ server <- function(input, output, session) {
       write.csv(prevalenceAbsolute(), file, row.names = TRUE)
     }
   )
-
+  
   output$prevalenceRelativeOutput <- renderDT({
     datatable(prevalenceRelative())
   })
-
+  
   output$downloadPrevalenceRelative <- downloadHandler(
     filename = function() {
       paste("PrevalenceRelative", ".csv", sep = "")
@@ -353,48 +344,77 @@ server <- function(input, output, session) {
       write.csv(prevalenceRelative(), file, row.names = TRUE)
     }
   )
-
+  
   ## Core Microbiota ##
-
+  
+  # coreHeatmapParams <- reactive({
+  #   # Core with compositionals:
+  #   detections <- 10^seq(log10(as.numeric(input$detectionMin)), log10(1), length = 10)
+  #   gray <- rev(brewer.pal(5,"Spectral"))
+  #   coreplot <- plot_core(compositionalInput(), plot.type = "heatmap", colours = gray, prevalences = 0, detections = detections) + xlab("Detection Threshold (Relative Abundance)")
+  #   if(input$transparentCoreHeatmap == TRUE){
+  #     coreplot <- coreplot +
+  #       theme(panel.background = element_rect(fill = "transparent", colour = NA), plot.background = element_rect(fill = "transparent", colour = NA), legend.background = element_rect(fill = "transparent", colour = NA), legend.box.background = element_rect(fill = "transparent", colour = NA))
+  #   }
+  #
+  #   ggplotly(coreplot, height = plot_width(compositionalInput(), mult = 10, otu.or.tax = "tax"), width = 900 )
+  # })
   coreHeatmapParams <- reactive({
-    # Core with compositionals:
-    detections <- 10^seq(log10(as.numeric(input$detectionMin)), log10(1), length = 10)
-    gray <- rev(brewer.pal(5,"Spectral"))
-    coreplot <- plot_core(compositionalInput(), plot.type = "heatmap", colours = gray, prevalences = 0, detections = detections) + xlab("Detection Threshold (Relative Abundance)")
-    if(input$transparentCoreHeatmap == TRUE){
-      coreplot <- coreplot +
-        theme(panel.background = element_rect(fill = "transparent", colour = NA), plot.background = element_rect(fill = "transparent", colour = NA), legend.background = element_rect(fill = "transparent", colour = NA), legend.box.background = element_rect(fill = "transparent", colour = NA))
+    if ( input$samplesAreColumns == TRUE ) {
+      if ( nrow(otu_table(datasetInput())) > 1000 ){
+        simpleError("A maximum of 1000 OTUs are permitted. Please filter the dataset and try again.")
+      } else {
+        b <- heatmaply(otu_table(datasetInput()),
+                       key.title = "Abundance", plot_method = "ggplot",
+                       heatmap_layers = theme(
+                         panel.background = element_rect(fill = "transparent"),
+                         plot.background = element_rect(fill = "transparent"),
+                         legend.background = element_rect(fill = "transparent")
+                       )
+        )      }
+    } else {
+      if (ncol(otu_table(datasetInput())) > 1000){
+        simpleError("A maximum of 1000 OTUs are permitted. Please filter the dataset and try again.")
+      } else {
+        b <- heatmaply(otu_table(datasetInput()),
+                       key.title = "Abundance", plot_method = "ggplot",
+                       heatmap_layers = theme(
+                         panel.background = element_rect(fill = "transparent"),
+                         plot.background = element_rect(fill = "transparent"),
+                         legend.background = element_rect(fill = "transparent")
+                       )
+        )
+      }
     }
-
-    ggplotly(coreplot, height = plot_width(compositionalInput(), mult = 10, otu.or.tax = "tax"), width = 900 )
+    return(b)
   })
   output$coreHeatmap <- renderPlotly({
-    coreHeatmapParams()
+    ggplotly(coreHeatmapParams(), height = 1060, width = 1060)
   })
-
+  
   ## Community Composition ##
-
-
+  
+  
   # Updating SelectInputs when database changes #
   observeEvent(input$datasetUpdate, {
     tryCatch({
-    updateSelectInput(session, "z1",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "z2",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "z3",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "v4",
-                      choices = colnames(tax_table(datasetInput())))
-    updateSelectInput(session, "z1Average",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "v4Plot",
-                      choices = colnames(tax_table(datasetInput())))
+      updateSelectInput(session, "z1",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "z2",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "z3",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "v4",
+                        choices = colnames(tax_table(datasetInput())))
+      updateSelectInput(session, "z1Average",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "v4Plot",
+                        choices = colnames(tax_table(datasetInput())))
     }, error = function(e) {
       simpleError(e)
     })
   }, ignoreNULL = FALSE)
-
+  
   #Update metadata value selectInputs for CC Analysis
   observeEvent(input$z1, {
     updateSelectInput(session, "v1",
@@ -408,9 +428,9 @@ server <- function(input, output, session) {
     updateSelectInput(session, "v3",
                       choices = (sample_data(datasetInput())[[input$z3]]))
   })
-
+  
   # Abundance of taxa in sample variable by taxa
-  communityPlotParams <- reactive ({ #Filtering the data seems to produce some strange results. The filtering appears to work fine though.
+  communityPlotParams <- reactive ({
     if(input$communityPlotFacetWrap == FALSE){
       compositionplot <- plot_ordered_bar(datasetInput(), x=input$z1, y="Abundance", fill=input$v4, title=paste0("Abundance by ", input$v4, " in ", input$z1))  + geom_bar(stat="identity") + theme_pubr(base_size = 10, margin = TRUE, legend = "right", x.text.angle = 90) + rremove("xlab") + rremove("ylab")
     } else {
@@ -426,7 +446,7 @@ server <- function(input, output, session) {
   output$communityPlot <- renderPlotly({
     communityPlotParams()
   })
-
+  
   communityPlotGenusParams <- reactive({
     if(input$communityPlotFacetWrap == FALSE){
       compositionplot <- plot_ordered_bar(compositionalInput(), x=input$z1, fill=input$v4, title=paste0("Relative abundance by ", input$v4, " in ", input$z1))  + geom_bar(stat="identity") +
@@ -448,11 +468,11 @@ server <- function(input, output, session) {
   output$communityPlotGenus <- renderPlotly({
     communityPlotGenusParams()
   })
-
+  
   # Taxa prevalence plot
   communityPrevalenceParams <- reactive({
     prevplot <- plot_taxa_prevalence(compositionalInput(), input$v4) + theme_pubr(base_size = 10, margin = TRUE, legend = "right", x.text.angle = 90) + #If OTUs > 25 it fails
-    rremove("xlab") + rremove("ylab")
+      rremove("xlab") + rremove("ylab")
     if(input$transparentCommunityPlot == TRUE){
       prevplot <- prevplot +
         theme(panel.background = element_rect(fill = "transparent", colour = NA), plot.background = element_rect(fill = "transparent", colour = NA), legend.background = element_rect(fill = "transparent", colour = NA), legend.box.background = element_rect(fill = "transparent", colour = NA))
@@ -460,34 +480,34 @@ server <- function(input, output, session) {
     p <- ggplotly(prevplot, height = 500, width = 1000) %>%  layout(xaxis = list(title = "Average count abundance (log scale)", automargin = TRUE), yaxis = list(title = "Taxa prevalence", automargin = TRUE))
     return(p)
   })
-
+  
   output$communityPrevalence <- renderPlotly({
     communityPrevalenceParams()
   })
-
-
+  
+  
   # Phyloseq Summary #
   summaryParams <- reactive({
     req(datasetInput())
     summarize_phyloseq(datasetInput())
   })
-
+  
   output$summary <- renderPrint({
     summaryParams()
   })
-
+  
   ## Alpha Diversity ##
-
+  
   #Abundance and Evenness tables#
-
+  
   evennessParams <- reactive({
     datatable(evenness(datasetInput()), options = list(scrollX = TRUE))
   })
-
+  
   output$evennessTable <- renderDataTable({
     evennessParams()
   })
-
+  
   output$downloadEvenness <- downloadHandler(
     filename = function() {
       paste("evenness", ".csv", sep = "")
@@ -496,14 +516,14 @@ server <- function(input, output, session) {
       write.csv(evenness(datasetInput()), file, row.names = TRUE)
     }
   )
-
+  
   absoluteAbundanceParams <- reactive({
     datatable(abundances(datasetInput()), options = list(scrollX = TRUE))
   })
   output$absoluteAbundanceTable <- renderDataTable( server = FALSE, {
     absoluteAbundanceParams()
   })
-
+  
   output$downloadAbundance <- downloadHandler(
     filename = function() {
       paste("evenness", ".csv", sep = "")
@@ -512,7 +532,7 @@ server <- function(input, output, session) {
       write.csv(abundances(datasetInput()), file, row.names = TRUE)
     }
   )
-
+  
   relativeAbundanceParams <- reactive({
     datatable(abundances(datasetInput(), transform = "compositional"), options = list(scrollX = TRUE))
   })
@@ -527,22 +547,22 @@ server <- function(input, output, session) {
       write.csv(abundances(datasetInput(), transform = "compositional"), file, row.names = TRUE)
     }
   )
-
+  
   # Updating SelectInputs when database changes #
   observeEvent(input$datasetUpdate, {
     tryCatch({
-    updateSelectInput(session, "x",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "x2", choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "x3", choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "y",
-                      choices = colnames(alpha(datasetInput())))
+      updateSelectInput(session, "x",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "x2", choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "x3", choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "y",
+                        choices = colnames(alpha(datasetInput())))
     }, error = function(e){
       simpleError(e)
     })
   }, ignoreNULL = FALSE)
-
-
+  
+  
   # Merged table - generate and output #
   mergedTable <- reactive({
     merge(meta(datasetInput()), alpha(datasetInput()), all.y = TRUE)
@@ -550,11 +570,11 @@ server <- function(input, output, session) {
   viewParams <- reactive({
     datatable(mergedTable(), options = list(scrollX = TRUE))
   })
-
+  
   output$view <- DT::renderDataTable({
     viewParams()
   })
-
+  
   output$downloadMergedTable <- downloadHandler(
     filename = function() {
       paste("MetadataDiversityMeasureTable", ".csv", sep = "")
@@ -563,7 +583,7 @@ server <- function(input, output, session) {
       write.csv(mergedTable(), file, row.names = TRUE)
     }
   )
-
+  
   # Alpha Diversity Richness Plot #
   richnessPlotParams <- reactive({
     if(input$richnessPlotGridWrap == FALSE){
@@ -583,42 +603,42 @@ server <- function(input, output, session) {
     }
     if(input$transparentRichness == TRUE){
       richnessplot <- richnessplot +
-      theme(panel.background = element_rect(fill = "transparent", colour = NA), plot.background = element_rect(fill = "transparent", colour = NA), legend.background = element_rect(fill = "transparent", colour = NA), legend.box.background = element_rect(fill = "transparent", colour = NA))
+        theme(panel.background = element_rect(fill = "transparent", colour = NA), plot.background = element_rect(fill = "transparent", colour = NA), legend.background = element_rect(fill = "transparent", colour = NA), legend.box.background = element_rect(fill = "transparent", colour = NA))
     }
     richnessplot <- richnessplot + rremove("xlab") + rremove("ylab")
     p <- ggplotly(richnessplot, height = 500, width = plot_width(datasetInput())) %>% layout(xaxis = list(title = input$x2, automargin = TRUE), yaxis = list(title = paste("Alpha Diversity Measure (", input$richnessChoices , ")"), automargin = TRUE))
   })
-
+  
   output$richnessPlot <- renderPlotly({
     richnessPlotParams()
   })
-
+  
   ## Beta Diversity ##
-
+  
   # Updating SelectInputs when dataset changes#
   observeEvent(input$datasetUpdate, {
     tryCatch({
-    updateSelectInput(session, "xb",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "xb2",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "xb3",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "yb",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "zb",
-                      choices = colnames(tax_table(datasetInput())))
-    updateSelectInput(session, "zbsplit",
-                      choices = colnames(tax_table(datasetInput())))
+      updateSelectInput(session, "xb",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "xb2",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "xb3",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "yb",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "zb",
+                        choices = colnames(tax_table(datasetInput())))
+      updateSelectInput(session, "zbsplit",
+                        choices = colnames(tax_table(datasetInput())))
     }, error = function(e){
       simpleError(e)
     })
   }, ignoreNULL = FALSE)
-
+  
   compositionalInput <- reactive({
     microbiome::transform(datasetInput(), "compositional")
   })
-
+  
   ordinateData <- reactive({
     ordinate(
       compositionalInput(),
@@ -626,7 +646,7 @@ server <- function(input, output, session) {
       distance = input$ordinate.distance
     )
   })
-
+  
   ordinateDataSplit <- reactive({
     ordinate(
       compositionalInput(),
@@ -634,7 +654,7 @@ server <- function(input, output, session) {
       distance = input$ordinate.distance2
     )
   })
-
+  
   ordinateDataTaxa <- reactive({
     ordinate(
       compositionalInput(),
@@ -642,7 +662,7 @@ server <- function(input, output, session) {
       distance = input$ordinate.distance3
     )
   })
-
+  
   ordinatePlotParams <- reactive({
     if (ncol(sample_data(datasetInput())) > 1){
       p <- phyloseq::plot_ordination(datasetInput(), ordinateData(), color = input$xb, label = input$yb ) + geom_point(size = input$geom.size) + theme_pubr(base_size = 10, margin = TRUE, legend = "right")
@@ -657,11 +677,11 @@ server <- function(input, output, session) {
     }
     ggplotly(p, height = 500, width = 1050)
   })
-
+  
   output$ordinatePlot <- renderPlotly({
     ordinatePlotParams()
   })
-
+  
   # Split plot - not happy with how it looks - commented out
   # splitOrdParams <- reactive({
   #   if (ncol(sample_data(datasetInput())) > 1){
@@ -697,7 +717,7 @@ server <- function(input, output, session) {
   # output$splitOrd <- renderPlotly({
   #   splitOrdParams()
   # })
-
+  
   taxaOrdParams <- reactive({
     taxaOrdplot <-
       plot_ordination(
@@ -713,34 +733,34 @@ server <- function(input, output, session) {
     }
     ggplotly(taxaOrdplot, height = 500, width = 1050)
   })
-
+  
   output$taxaOrd <- renderPlotly({
     taxaOrdParams()
   })
-
+  
   ###########################
   ## Statistical analysis ###
   ###########################
-
+  
   ## PERMANOVA ##
   #Update metadata column when dataset changes
   observeEvent(input$datasetUpdate, {
     tryCatch({
-    updateSelectInput(session, "permanovaColumn",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "permanovaColumnP",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "permanovaColumnFac",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "permanovaMetadataNet",
-                      choices = colnames(meta(datasetInput())))
-    updateSelectInput(session, "permanovaMetaShapeNet",
-                    choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "permanovaColumn",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "permanovaColumnP",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "permanovaColumnFac",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "permanovaMetadataNet",
+                        choices = colnames(meta(datasetInput())))
+      updateSelectInput(session, "permanovaMetaShapeNet",
+                        choices = colnames(meta(datasetInput())))
     }, error = function(e){
       simpleError(e)
     })
   }, ignoreNULL = FALSE)
-
+  
   permanova <- reactive({
     otu <- abundances(compositionalInput())
     meta <- meta(compositionalInput())
@@ -748,17 +768,17 @@ server <- function(input, output, session) {
     metadata <- input$permanovaColumnP
     m <- meta[[metadata]]
     a <- adonis(t(otu) ~ m,
-           data = meta, permutations = permnumber, method = input$permanovaDistanceMethodP, parallel = getOption("mc.cores")
+                data = meta, permutations = permnumber, method = input$permanovaDistanceMethodP, parallel = getOption("mc.cores")
     )
     b <- as.data.frame(a$aov.tab)
     names(b) <- c(metadata, "Df", "Sum Sq", "Mean Sq", "F value", "P value")
     print(b)
   })
-
+  
   output$pValue <- renderDataTable({
     permanova()
   })
-
+  
   output$downloadPValue <- downloadHandler(
     filename = function() {
       paste("P-ValueTable", ".csv", sep = "")
@@ -767,7 +787,7 @@ server <- function(input, output, session) {
       write.csv(permanova(), file, row.names = TRUE)
     }
   )
-
+  
   homogenietyParams <- reactive({
     otu <- abundances(compositionalInput())
     meta <- meta(compositionalInput())
@@ -775,11 +795,11 @@ server <- function(input, output, session) {
     metadata <- input$permanovaColumnP
     anova(betadisper(dist, meta[[metadata]]))
   })
-
+  
   output$homogeniety <- renderDataTable({
     homogenietyParams()
   })
-
+  
   output$downloadHomogeniety <- downloadHandler(
     filename = function() {
       paste("HomogenietyTable", ".csv", sep = "")
@@ -788,7 +808,7 @@ server <- function(input, output, session) {
       write.csv(homogenietyParams(), file, row.names = TRUE)
     }
   )
-
+  
   topFactorPlotParams <- reactive({
     otu <- abundances(compositionalInput())
     meta <- meta(compositionalInput())
@@ -801,21 +821,24 @@ server <- function(input, output, session) {
     coef <- coefficients(permanova)["column1",]
     top.coef <- coef[rev(order(abs(coef)))[1:20]] #top 20 coefficients
     par(mar = c(3, 14, 2, 1))
-     p <- barplot(sort(top.coef), horiz = T, las = 1, main = "Top taxa")
+    p <- barplot(sort(top.coef), horiz = T, las = 1, main = "Top taxa")
     print(p)
   })
   output$topFactorPlot <- renderPlot({
     topFactorPlotParams()
   })
-
+  
   netPlotParams <- reactive({
     if(input$permanovaPlotTypeNet == "samples"){
-      n <- make_network(compositionalInput(), type = "samples", distance = input$permanovaDistanceMethodNet)
-      p <- plot_network(n, compositionalInput(), type = "samples", shape = input$permanovaMetaShapeNet, color = input$permanovaMetadataNet )
+      n <- make_network(compositionalInput(), type = "samples", distance = input$permanovaDistanceMethodNet, max.dist = 0.2)
+      p <- plot_network(n, compositionalInput(), type = "samples", shape = input$permanovaMetaShapeNet, color = input$permanovaMetadataNet, line_weight = 0.4)
     }
     if(input$permanovaPlotTypeNet == "taxa"){
-      n <- make_network(compositionalInput(), type = "taxa", distance = input$permanovaDistanceMethodNet)
-      p <- plot_network(n, compositionalInput(), type = "taxa", color= ntaxa(otu_table(compositionalInput())))
+      #n <- make_network(compositionalInput(), type = "taxa", distance = input$permanovaDistanceMethodNet)
+      #p <- plot_network(n, compositionalInput(), type = "taxa", color= ntaxa(otu_table(datasetInput())))
+      data <- subset_samples(compositionalInput(), !is.na(colnames(otu_table(compositionalInput()))))
+      p <- plot_net(data, color = input$permanovaMetadataNet, shape = input$permanovaMetaShapeNet )
+      
     }
     if(input$transparentPermanova == TRUE){
       p <- p + theme(panel.background = element_rect(fill = "transparent", colour = NA), plot.background = element_rect(fill = "transparent", colour = NA), legend.background = element_rect(fill = "transparent", colour = NA), legend.box.background = element_rect(fill = "transparent", colour = NA))
@@ -825,11 +848,11 @@ server <- function(input, output, session) {
   output$netPlot <- renderPlotly({
     netPlotParams()
   })
-
-
+  
+  
   ### RESULTS ###
-
-
+  
+  
   output$downloadReportAlpha <- downloadHandler(
     filename = function() {
       paste('report', sep = '.', switch(
@@ -838,13 +861,13 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       src <- normalizePath('final_report.Rmd')
-
+      
       # temporarily switch to the temp dir, in case you do not have write
       # permission to the current working directory
       owd <- setwd(tempdir())
       on.exit(setwd(owd))
       file.copy(src, 'final_report.Rmd', overwrite = TRUE)
-
+      
       out <- rmarkdown::render('final_report.Rmd',
                                switch(input$format,
                                       PDF = pdf_document(),
