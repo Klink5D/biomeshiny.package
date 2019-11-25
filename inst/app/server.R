@@ -319,6 +319,17 @@ server <- function(input, output, session) {
     taxa(filterData)
   })
   
+  prevalenceAbsolute <- reactive({
+    a <- as.data.frame(prevalence(compositionalInput(), detection = input$detectionPrevalence2/100, sort = TRUE, count = TRUE))
+    names(a) <- c("Prevalence (counts)")
+    return(a)
+  })
+  prevalenceRelative <- reactive({
+    a <- as.data.frame(prevalence(compositionalInput(), detection = input$detectionPrevalence2/100, sort = TRUE))
+    names(a) <- c("Prevalence (relative)")
+    return(a)
+  })
+  
   output$prevalenceAbsoluteOutput <- renderDT({
     datatable(prevalenceAbsolute())
   })
@@ -665,11 +676,11 @@ server <- function(input, output, session) {
   
   ordinatePlotParams <- reactive({
     if (ncol(sample_data(datasetInput())) > 1){
-      p <- phyloseq::plot_ordination(datasetInput(), ordinateData(), color = input$xb, label = input$yb ) + geom_point(size = input$geom.size) + theme_pubr(base_size = 10, margin = TRUE, legend = "right")
+      p <- phyloseq::plot_ordination(datasetInput(), ordinateData(), color = input$xb, label = "sample" ) + geom_point(size = input$geom.size) + theme_pubr(base_size = 10, margin = TRUE, legend = "right")
     } else {
       a <- datasetInput()
       sample_data(a)[,2] <- sample_data(a)[,1]
-      p <- phyloseq::plot_ordination(a, ordinateData(), color = input$xb, label = input$yb ) + geom_point(size = input$geom.size) + theme_pubr(base_size = 10, margin = TRUE, legend = "right")
+      p <- phyloseq::plot_ordination(a, ordinateData(), color = input$xb, label = "sample") + geom_point(size = input$geom.size) + theme_pubr(base_size = 10, margin = TRUE, legend = "right")
     }
     if(input$transparentOrdinatePlot){
       p <- p +
