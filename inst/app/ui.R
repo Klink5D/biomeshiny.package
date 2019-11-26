@@ -129,6 +129,46 @@ report.source <- reactive({
   return(report)
 })
 
+#New Microbiome update messed up the formatting on the Phyloseq summary.
+summarize_phyloseq_mod <- function(x){
+  {
+    ave <- minR <- maxR <- tR <- aR <- mR <- sR <- sR1 <- sR2 <- svar <- NULL
+    sam_var <- zno <- comp <- NULL
+    ave <- sum(sample_sums(x))/nsamples(x)
+    comp <- length(which(colSums(abundances(x)) > 1))
+    if (comp == 0) {
+      a <- paste0("Compositional = YES")
+    }
+    else {
+      a <- paste0("Compositional = NO")
+    }
+    minR <- paste0("Min. number of reads = ", min(sample_sums(x)))
+    maxR <- paste0("Max. number of reads = ", max(sample_sums(x)))
+    tR <- paste0("Total number of reads = ", sum(sample_sums(x)))
+    aR <- paste0("Average number of reads = ", ave)
+    mR <- paste0("Median number of reads = ", median(sample_sums(x)))
+    if (any(taxa_sums(x) <= 1) == TRUE) {
+      sR <- paste0("Any OTU sum to 1 or less? ", "YES")
+    }
+    else {
+      sR <- paste0("Any OTU sum to 1 or less? ", "NO")
+    }
+    zno <- paste0("Sparsity = ", length(which(abundances(x) == 
+                                                   0))/length(abundances(x)))
+    sR1 <- paste0("Number of singletons = ", length(taxa_sums(x)[taxa_sums(x) <= 
+                                                                      1]))
+    sR2 <- paste0("Percent of OTUs that are singletons (i.e. exactly one read detected across all samples): ", 
+                  mean(taxa_sums(x) == 1) * 100)
+    svar <- paste0("Number of sample variables: ", ncol(meta(x)))
+    list(a,minR, maxR, tR, aR, mR, zno, sR, sR1, sR2, svar)
+  }
+}
+#Function to fix the formatting on the sample variables
+list_sample_variables <- function(x){
+  a<-colnames(sample_data(x))
+  as.list(a)
+}
+
 ####### END OF FUNCTIONS #######
 
 
@@ -140,7 +180,7 @@ data("atlas1006")
 
 # UI
 ui <- dashboardPage(
-  dashboardHeader(title = "Biome-shiny v0.8"),
+  dashboardHeader(title = "Biome-shiny v0.8 - November 28 Demo"),
   dashboardSidebar(
     sidebarMenu(
       br(),
@@ -249,8 +289,8 @@ ui <- dashboardPage(
       ),
       
       tabItem(tabName="dataprocessing",
-              tabsetPanel(
-                tabPanel("Variables",
+              #tabsetPanel(
+               #tabPanel("Variables",
                          fluidRow(
                            box(
                              title = "Fiter by abundance", collapsible = TRUE,
@@ -280,16 +320,18 @@ ui <- dashboardPage(
                              checkboxGroupInput("subsetSamples", inline = TRUE, label = "Samples:", choices = "")
                            )
                          )),
-                tabPanel("Absolute prevalence", dataTableOutput("prevalenceAbsoluteOutput"), downloadButton("downloadPrevalenceAbsolute")),
-                tabPanel("Relative prevalence", dataTableOutput("prevalenceRelativeOutput"), downloadButton("downloadPrevalenceRelative"))#,
+                #tabPanel("Absolute prevalence", dataTableOutput("prevalenceAbsoluteOutput"), downloadButton("downloadPrevalenceAbsolute")),
+                #tabPanel("Relative prevalence", dataTableOutput("prevalenceRelativeOutput"), downloadButton("downloadPrevalenceRelative"))#,
                 #tabPanel("Summary", verbatimTextOutput("corePhyloSummary")),
                 #tabPanel("Taxa", verbatimTextOutput("coreTaxa"))
-              )
-      ),
+              #)
+      #),
       
       tabItem(tabName = "phyloseqsummary",
               h1("Phyloseq Summary"),
-              verbatimTextOutput("summary")
+              verbatimTextOutput("summary"),
+              paste0("Sample variables:"),
+              verbatimTextOutput("sampleVars")
       ),
       
       

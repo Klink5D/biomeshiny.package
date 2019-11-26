@@ -133,6 +133,45 @@ collect_content <- function(){
   orca(communityPlotParams(), file = "community_plot.png")
 }
 
+#New Microbiome update messed up the formatting on the Phyloseq summary.
+summarize_phyloseq_mod <- function(x){
+  {
+    ave <- minR <- maxR <- tR <- aR <- mR <- sR <- sR1 <- sR2 <- svar <- NULL
+    sam_var <- zno <- comp <- NULL
+    ave <- sum(sample_sums(x))/nsamples(x)
+    comp <- length(which(colSums(abundances(x)) > 1))
+    if (comp == 0) {
+     a <- paste0("Compositional = YES")
+    }
+    else {
+      a <- paste0("Compositional = NO")
+    }
+    minR <- paste0("Min. number of reads = ", min(sample_sums(x)))
+    maxR <- paste0("Max. number of reads = ", max(sample_sums(x)))
+    tR <- paste0("Total number of reads = ", sum(sample_sums(x)))
+    aR <- paste0("Average number of reads = ", ave)
+    mR <- paste0("Median number of reads = ", median(sample_sums(x)))
+    if (any(taxa_sums(x) <= 1) == TRUE) {
+      sR <- paste0("Any OTU sum to 1 or less? ", "YES")
+    }
+    else {
+      sR <- paste0("Any OTU sum to 1 or less? ", "NO")
+    }
+    zno <- paste0("Sparsity = ", length(which(abundances(x) == 
+                                                   0))/length(abundances(x)))
+    sR1 <- paste0("Number of singletons = ", length(taxa_sums(x)[taxa_sums(x) <= 
+                                                                      1]))
+    sR2 <- paste0("Percent of OTUs that are singletons (i.e. exactly one read detected across all samples): ", 
+                  mean(taxa_sums(x) == 1) * 100)
+    svar <- paste0("Number of sample variables: ", ncol(meta(x)))
+    list(a,minR, maxR, tR, aR, mR, zno, sR, sR1, sR2, svar)
+  }
+}
+#Function to fix the formatting on the sample variables
+list_sample_variables <- function(x){
+  a<-colnames(sample_data(x))
+  as.list(a)
+}
 
 # Load sample datasets #
 data("dietswap")
@@ -246,8 +285,8 @@ server <- function(input, output, session) {
   observeEvent(input$subsetTaxaByRank, {
     tryCatch({
       updateCheckboxGroupInput(session, "subsetTaxaByRankTaxList",
-                               choices = levels(data.frame(tax_table(datasetInput()))[[input$subsetTaxaByRank]]),
-                               selected = levels(data.frame(tax_table(datasetInput()))[[input$subsetTaxaByRank]]),
+                               choices = levels(data.frame(tax_table(datasetChoice()))[[input$subsetTaxaByRank]]),
+                               selected = levels(data.frame(tax_table(datasetChoice()))[[input$subsetTaxaByRank]]),
                                inline = TRUE
       )
     }, error = function(e) {
@@ -259,8 +298,8 @@ server <- function(input, output, session) {
   observeEvent(input$datasetUpdate, {
     tryCatch({
       updateCheckboxGroupInput(session, "subsetSamples",
-                               choices = colnames(otu_table(datasetChoice())),
-                               selected = colnames(otu_table(datasetChoice())),
+                               choices = colnames(otu_table(datasetInput())),
+                               selected = colnames(otu_table(datasetInput())),
                                inline = TRUE
       )
     }, error = function(e) {
@@ -500,11 +539,19 @@ server <- function(input, output, session) {
   # Phyloseq Summary #
   summaryParams <- reactive({
     req(datasetInput())
-    summarize_phyloseq(datasetInput())
+    as.character(summarize_phyloseq_mod(datasetInput()))
   })
   
   output$summary <- renderPrint({
     summaryParams()
+  })
+  
+  sampleVarsParams <- reactive({
+    list_sample_variables(datasetInput())
+  })
+  
+  output$sampleVars <- renderPrint({
+    as.character(sampleVarsParams())  
   })
   
   ## Alpha Diversity ##
