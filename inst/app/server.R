@@ -298,8 +298,8 @@ server <- function(input, output, session) {
   observeEvent(input$datasetUpdate, {
     tryCatch({
       updateCheckboxGroupInput(session, "subsetSamples",
-                               choices = colnames(otu_table(datasetInput())),
-                               selected = colnames(otu_table(datasetInput())),
+                               choices = colnames(otu_table(datasetChoice())),
+                               selected = colnames(otu_table(datasetChoice())),
                                inline = TRUE
       )
     }, error = function(e) {
@@ -322,6 +322,11 @@ server <- function(input, output, session) {
   ## Function to apply filters to the dataset ##
   filterData <- reactive({
     physeq <- datasetChoice()
+    # Filter top X taxa
+    if (input$pruneTaxaCheck == TRUE){
+      filterTaxa <- names(sort(taxa_sums(physeq), decreasing = TRUE)[1:input$pruneTaxa])
+      physeq <- prune_taxa(filterTaxa, physeq)
+    }
     # Subset data by taxonomic rank - commented out for now since I'm having issues implementing it
     if (input$subsetTaxaByRankCheck == TRUE){
       oldMA <- tax_table(physeq)
@@ -335,11 +340,6 @@ server <- function(input, output, session) {
       # else {
       tax_table(physeq) <- tax_table(newMA)
       # }
-    }
-    # Filter top X taxa
-    if (input$pruneTaxaCheck == TRUE){
-      filterTaxa <- names(sort(taxa_sums(physeq), decreasing = TRUE)[1:input$pruneTaxa])
-      physeq <- prune_taxa(filterTaxa, physeq)
     }
     if (input$subsetSamplesCheck == TRUE){
       oldDF <- as(sample_data(physeq), "data.frame")
