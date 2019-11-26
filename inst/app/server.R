@@ -307,6 +307,36 @@ server <- function(input, output, session) {
     })
   })
   
+  #Uncheck all taxa
+  observeEvent(input$subsetTaxaByRankUntickAll, {
+    tryCatch({
+      updateCheckboxGroupInput(
+        session, "subsetTaxaByRankTaxList",
+        choices = levels(data.frame(tax_table(datasetChoice()))[[input$subsetTaxaByRank]]),
+        selected = NULL,
+        inline = TRUE
+      )
+    }, error = function(e) {
+      simpleError(e)
+    }
+    )
+  })
+  
+  #Uncheck all samples
+  observeEvent(input$subsetSamplesUntickAll, {
+    tryCatch({
+      updateCheckboxGroupInput(
+        session, "subsetSamples",
+        choices = colnames(otu_table(datasetChoice())),
+        selected = NULL,
+        inline = TRUE
+      )
+    }, error = function(e) {
+      simpleError(e)
+    }
+    )
+  })
+  
   ## Table generation functions ##
   prevalenceAbsolute <- reactive({
     a <- as.data.frame(prevalence(compositionalInput(), detection = input$detectionPrevalence2/100, sort = TRUE, count = TRUE))

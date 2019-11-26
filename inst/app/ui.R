@@ -310,12 +310,14 @@ ui <- dashboardPage(
                              checkboxInput("subsetTaxaByRankCheck", "Subset taxa by taxonomy rank"),
                              conditionalPanel(
                                condition = "input.subsetTaxaByRankCheck == 1",
+                               actionButton("subsetTaxaByRankUntickAll", "Uncheck all taxa"),
                                selectInput("subsetTaxaByRank", label = "Taxa rank:", choices = ""),
                                checkboxGroupInput("subsetTaxaByRankTaxList", label = "Taxa:", choices = "")
                              )
                            ),
                            box(
                              title = "Remove samples", collapsible = TRUE, collapsed = TRUE,
+                             actionButton("subsetSamplesUntickAll", "Uncheck all samples"),
                              checkboxInput("subsetSamplesCheck", label = "Remove unchecked samples"),
                              checkboxGroupInput("subsetSamples", inline = TRUE, label = "Samples:", choices = "")
                            )
