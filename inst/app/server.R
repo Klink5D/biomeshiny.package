@@ -293,7 +293,6 @@ server <- function(input, output, session) {
       simpleError(e)
     })
   })
-  
   ## Update subsetSamples Checkbox Group ##
   observeEvent(input$datasetUpdate, {
     tryCatch({
@@ -306,6 +305,35 @@ server <- function(input, output, session) {
       simpleError(e)
     })
   })
+  
+  #Chceck all samples
+  observeEvent(input$subsetSamplesTickAll, {
+    tryCatch({
+      updateCheckboxGroupInput(session, "subsetSamples",
+                               choices = colnames(otu_table(datasetChoice())),
+                               selected = colnames(otu_table(datasetChoice())),
+                               inline = TRUE
+      )
+    }, error = function(e) {
+      simpleError(e)
+    })
+  })
+  
+  #Check all taxa
+  observeEvent(input$subsetTaxaByRankTickAll, {
+    tryCatch({
+      updateCheckboxGroupInput(
+        session, "subsetTaxaByRankTaxList",
+        choices = levels(data.frame(tax_table(datasetChoice()))[[input$subsetTaxaByRank]]),
+        selected = levels(data.frame(tax_table(datasetChoice()))[[input$subsetTaxaByRank]]),
+        inline = TRUE
+      )
+    }, error = function(e) {
+      simpleError(e)
+    }
+    )
+  })
+  
   
   #Uncheck all taxa
   observeEvent(input$subsetTaxaByRankUntickAll, {
@@ -336,7 +364,7 @@ server <- function(input, output, session) {
     }
     )
   })
-  
+    
   ## Table generation functions ##
   prevalenceAbsolute <- reactive({
     a <- as.data.frame(prevalence(compositionalInput(), detection = input$detectionPrevalence2/100, sort = TRUE, count = TRUE))
@@ -352,11 +380,6 @@ server <- function(input, output, session) {
   ## Function to apply filters to the dataset ##
   filterData <- reactive({
     physeq <- datasetChoice()
-    # Filter top X taxa
-    if (input$pruneTaxaCheck == TRUE){
-      filterTaxa <- names(sort(taxa_sums(physeq), decreasing = TRUE)[1:input$pruneTaxa])
-      physeq <- prune_taxa(filterTaxa, physeq)
-    }
     # Subset data by taxonomic rank - commented out for now since I'm having issues implementing it
     if (input$subsetTaxaByRankCheck == TRUE){
       oldMA <- tax_table(physeq)
@@ -371,6 +394,12 @@ server <- function(input, output, session) {
       tax_table(physeq) <- tax_table(newMA)
       # }
     }
+    # Filter top X taxa
+    if (input$pruneTaxaCheck == TRUE){
+      filterTaxa <- names(sort(taxa_sums(physeq), decreasing = TRUE)[1:input$pruneTaxa])
+      physeq <- prune_taxa(filterTaxa, physeq)
+    }
+    #Filter out samples
     if (input$subsetSamplesCheck == TRUE){
       oldDF <- as(sample_data(physeq), "data.frame")
       newDF <- subset(oldDF, colnames(otu_table(physeq)) %in% input$subsetSamples)

@@ -292,34 +292,33 @@ ui <- dashboardPage(
               #tabsetPanel(
                #tabPanel("Variables",
                          fluidRow(
+                           tabBox(
+                             title = "Data filtering", width = 10,
+                             tabPanel( "Top taxa",
+                             checkboxInput("pruneTaxaCheck", "Remove non-top taxa"),
+                               numericInput("pruneTaxa", label = "Number of top taxa:", value = "10", min = "1")
+                             ),
+                             tabPanel( "Subset taxa",
+                             checkboxInput("subsetTaxaByRankCheck", "Subset taxa by taxonomy rank"),
+                               actionButton("subsetTaxaByRankUntickAll", "Uncheck all taxa"),
+                               actionButton("subsetTaxaByRankTickAll", "Check all taxa"),
+                               selectInput("subsetTaxaByRank", label = "Taxa rank:", choices = ""),
+                               checkboxGroupInput("subsetTaxaByRankTaxList", inline = TRUE, label = "Taxa:", choices = "")
+                           ),
+                           tabPanel(
+                             title = "Remove samples",
+                             actionButton("subsetSamplesUntickAll", "Uncheck all samples"),
+                             actionButton("subsetSamplesTickAll", "Check all samples"),
+                             checkboxInput("subsetSamplesCheck", label = "Remove unchecked samples"),
+                             checkboxGroupInput("subsetSamples", inline = TRUE, label = "Samples:", choices = "")
+                           )),
                            box(
-                             title = "Fiter by abundance", collapsible = TRUE,
+                             title = "Prevalence filtering", collapsible = TRUE, width = 2,
                              #numericInput("detectionPrevalence2", "Minimum Abundance:", min = 0.00, max = 100, value = 0, step = 1),
                              #bsTooltip("detectionPrevalence2", "Minimum abundance value of OTUs.", "right", options = list(container = "body")),
                              numericInput("prevalencePrevalence","Prevalence [0-1]:", min = 0, max = 1, value = 0.0, step = 0.05),
-                             bsTooltip("prevalencePrevalence", "Ratio of OTU presence in samples. ", "right", options = list(container = "body")),
+                             bsTooltip("prevalencePrevalence", "Ratio of OTU presence in samples. ", "up", options = list(container = "body")),
                              checkboxInput("coreFilterDataset", "Set as active dataset", value = FALSE)
-                           ),
-                           box(
-                             title = "Prune and subset taxa",
-                             checkboxInput("pruneTaxaCheck", "Keep the top taxa"),
-                             conditionalPanel(
-                               condition = "input.pruneTaxaCheck == 1",
-                               numericInput("pruneTaxa", label = "Number of top taxa:", value = "10", min = "1")
-                             ),
-                             checkboxInput("subsetTaxaByRankCheck", "Subset taxa by taxonomy rank"),
-                             conditionalPanel(
-                               condition = "input.subsetTaxaByRankCheck == 1",
-                               actionButton("subsetTaxaByRankUntickAll", "Uncheck all taxa"),
-                               selectInput("subsetTaxaByRank", label = "Taxa rank:", choices = ""),
-                               checkboxGroupInput("subsetTaxaByRankTaxList", label = "Taxa:", choices = "")
-                             )
-                           ),
-                           box(
-                             title = "Remove samples", collapsible = TRUE, collapsed = TRUE,
-                             actionButton("subsetSamplesUntickAll", "Uncheck all samples"),
-                             checkboxInput("subsetSamplesCheck", label = "Remove unchecked samples"),
-                             checkboxGroupInput("subsetSamples", inline = TRUE, label = "Samples:", choices = "")
                            )
                          )),
                 #tabPanel("Absolute prevalence", dataTableOutput("prevalenceAbsoluteOutput"), downloadButton("downloadPrevalenceAbsolute")),
